@@ -156,6 +156,32 @@ def get_final_answer(text: str, question_text: str) -> str:
 
     return ans
 
+def single_reasoning_call(question_text: str, system_msg: str) -> str:
+    params = decodingparamsdecider(question_text)
+
+    reasoning_prompt = (
+        f"Question:\n{question_text}\n\n"
+        "Answer with ONLY the final answer.\n"
+        "- Do NOT show your work.\n"
+        "- If it's a math problem, only give the final answer.\n"
+        "- Do NOT explain.\n"
+        "- Do NOT repeat the question.\n"
+        "- If the question has options (A, B, C, D, E), answer with ONLY the letter."
+    )
+
+    result = call_model_chat_completions(
+        prompt=reasoning_prompt,
+        system=system_msg,
+        temperature=params["temperature"],
+        max_tokens=params["max_tokens"],
+    )
+
+    if not result["ok"]:
+        return ""
+
+    raw_text = (result["text"] or "").strip()
+    return get_final_answer(raw_text, question_text)
+
 def agent_loop(question_text: str) -> str:
     print("Calling model...")
 
@@ -164,16 +190,5 @@ def agent_loop(question_text: str) -> str:
         "nothing else. Do not include explanations."
     )
 
-    result = call_model_chat_completions(
-        prompt=question_text,
-        system=system_msg,
-        model=MODEL,
-        temperature=0.0,
-    )
-
-    if not result["ok"]:
-        return ""
-
-    raw = (result["text"] or "").strip()
-    answer = get_final_answer(raw, question_text)
+    answer = single_reasoning_call(question_text, system_msg)
     return answer
