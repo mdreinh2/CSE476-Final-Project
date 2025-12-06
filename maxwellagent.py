@@ -89,6 +89,19 @@ def call_model_chat_completions(
             "headers": {},
         }
 
+def decodingparamsdecider(question: str) -> dict:
+    q = question.lower()
+
+    if "true or false" in q or "t/f" in q or "true/false" in q or "yes or no" in q:
+        return {"temperature": 0.0, "max_tokens": 32}
+    
+    if "options:" in q:
+        return {"temperature": 0.1, "max_tokens": 64}
+    
+    if any(token in q for token in ["how many", "calculate", "how muchh", "what is the total"]):
+        return {"temperature": 0.0, "max_tokens": 64}
+    
+    return {"temperature": 0.1, "max_tokens": 128}
 
 def agent_loop(question_text: str) -> str:
     print("Calling model...")
