@@ -183,12 +183,45 @@ def single_reasoning_call(question_text: str, system_msg: str) -> str:
     return get_final_answer(raw_text, question_text)
 
 def agent_loop(question_text: str) -> str:
-    print("Calling model...")
-
     system_msg = (
-        "You are a careful solver. Reply ONLY with the final answer, "
-        "nothing else. Do not include explanations."
+    "You are a careful, precise question-answering system. "
+    "You must respond with ONLY the final short answer. "
+    "Do NOT write full sentences. Do NOT explain. "
+    "Your reply must be a single word, number, or letter when possible."
     )
 
-    answer = single_reasoning_call(question_text, system_msg)
-    return answer
+    answers = []
+
+    a1 = single_reasoning_call(question_text, system_msg)
+    if a1:
+        print(f"Calling model...")
+        answers.append(a1)
+
+    a2 = single_reasoning_call(question_text, system_msg)
+    if a2:
+        print(f"Calling model for the second time...")
+        answers.append(a2)
+
+    if len(answers) == 2 and answers[0] == answers[1]:
+        print(f"Identical answers")
+        return answers[0]
+
+    a3 = single_reasoning_call(question_text, system_msg)
+    if a3:
+        print(f"Different answers, calling again...")
+        answers.append(a3)
+
+    answers = [a for a in answers if a]
+
+    if not answers:
+        return ""
+
+    counts = Counter(answers)
+    best_answer, _ = counts.most_common(1)[0]
+
+    best_answer = best_answer.strip()
+    if len(best_answer) > MAX_OUTPUT_CHARS:
+        best_answer = best_answer[:MAX_OUTPUT_CHARS]
+
+    return best_answer
+
