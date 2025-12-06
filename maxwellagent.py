@@ -103,6 +103,59 @@ def decodingparamsdecider(question: str) -> dict:
     
     return {"temperature": 0.1, "max_tokens": 128}
 
+def get_final_answer(text: str, question_text: str) -> str:
+    if not text:
+        return ""
+
+    q_lower = question_text.lower()
+    lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
+    ans = lines[0] if lines else ""
+
+    if ans.lower().startswith("the answer is:"):
+        ans = ans.split(":", 1)[1].strip()
+
+    for prefix in ("Answer:", "Ans:", "Final answer:", "Final:", "- ", "* ", "• "):
+        if ans.lower().startswith(prefix.lower()):
+            ans = ans[len(prefix):].strip()
+
+    if "options:" in q_lower:
+        stripped = ans.strip()
+
+        if (
+            len(stripped) == 3
+            and stripped[0] in "([{" 
+            and stripped[2] in ")]}"
+            and stripped[1] in "ABCDE"
+        ):
+            ans = stripped[1]
+
+    elif ans and ans[0] in "ABCDE":
+        ans = ans[0]
+
+    else:
+        for ch in "ABCDE":
+            token = f"({ch})"
+            if token in ans:
+                ans = ch
+                break
+
+    if any(tok in q_lower for tok in ["how many", "how much", "calculate", "total", "miles", "articles", "ounces", "dollars", "$"]):
+        matches = re.findall(r"\$?\d+(?:\.\d+)?%?", ans)
+        if matches:
+            ans = matches[-1]
+
+    low = ans.lower()
+    if low.startswith("yes"):
+        ans = "Yes"
+    elif low.startswith("no"):
+        ans = "No"
+
+    ans = ans.strip()
+    if len(ans) > MAX_OUTPUT_CHARS:
+        ans = ans[:MAX_OUTPUT_CHARS]
+
+    return ans
+
 def agent_loop(question_text: str) -> str:
     print("Calling model...")
 
@@ -121,5 +174,6 @@ def agent_loop(question_text: str) -> str:
     if not result["ok"]:
         return ""
 
-    answer = (result["text"] or "").strip()
+    raw = (result["text"] or "").strip()
+    answer = get_final_answer(raw, question_text)
     return answer
