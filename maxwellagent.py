@@ -194,21 +194,17 @@ def agent_loop(question_text: str) -> str:
 
     a1 = single_reasoning_call(question_text, system_msg)
     if a1:
-        print(f"Calling model...")
         answers.append(a1)
 
     a2 = single_reasoning_call(question_text, system_msg)
     if a2:
-        print(f"Calling model for the second time...")
         answers.append(a2)
 
     if len(answers) == 2 and answers[0] == answers[1]:
-        print(f"Identical answers")
         return answers[0]
 
     a3 = single_reasoning_call(question_text, system_msg)
     if a3:
-        print(f"Different answers, calling again...")
         answers.append(a3)
 
     answers = [a for a in answers if a]

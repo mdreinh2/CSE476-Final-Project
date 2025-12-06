@@ -32,7 +32,7 @@ def load_questions(path: Path) -> List[Dict[str, Any]]:
 def build_answers(questions: List[Dict[str, Any]]) -> List[Dict[str, str]]:
     answers = []
     for idx, question in enumerate(questions, start=1):
-        # Example: assume you have an agent loop that produces an answer string.
+        print(f"{idx}/{len(questions)}")
         real_answer = agent_loop(question["input"])
         answers.append({"output": real_answer})
     return answers
